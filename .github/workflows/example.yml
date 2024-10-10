@@ -1,0 +1,12 @@
+name: Add Comment about Build Artifact Download URL
+on:
+    issues:
+        types: [opened]
+jobs:
+    auto-assign:
+        runs-on: ubuntu-latest
+        steps:
+            - name: 'Add download url comment'
+                run: gh pr comment $ISSUE --add-assignee kilasuit 
+                GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+                ISSUE: ${{ github.event.issue.html_url }}
