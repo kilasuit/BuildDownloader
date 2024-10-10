@@ -1,6 +1,10 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
+<Product>Kilasuit's HelloWorld</Product>
+<Company>Kilasuit</Company>
+<Copyright>(c) kilasuit </Copyright>
+<AssemblyTitle>K-helloworld</AssemblyTitle>
     <OutputType>Exe</OutputType>
     <TargetFramework>net8.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
