@@ -3,7 +3,7 @@
   <PropertyGroup>
 <Product>Kilasuit's HelloWorld</Product>
 <Company>Kilasuit</Company>
-<Copyright>(c) kilasuit </Copyright>
+<Copyright>(c) kilasuit 2024 </Copyright>
 <AssemblyTitle>K-helloworld</AssemblyTitle>
     <OutputType>Exe</OutputType>
     <TargetFramework>net8.0</TargetFramework>
