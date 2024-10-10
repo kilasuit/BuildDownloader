@@ -106,7 +106,7 @@ function Get-GHAzDOPRBuildArtifact {
                     @{n = "AzDO_BuildBaseUrl"; ex = { $_.details_url.Split('/_build')[0] } },
                     @{n = "AzDO_BuildID"; ex = { $_.details_url.split('=')[-1] } }, 
                     @{n = 'allDetails' ; e = { $_ } },
-                    @{n = "DownloadURL" ; e = { "$($_.details_url.Split('/_build')[0])/_apis/build/builds/$($_.details_url.split('=')[-1])/artifacts?artifactName=build&api-version=7.1&%24format=zip" } } 
+                    @{n = "DownloadURL" ; e = { "$($_.details_url.Split('/_build')[0])/_apis/build/builds/$($_.details_url.split('=')[-1])/artifacts?artifactName=$BuildArtifactName&api-version=7.1&%24format=zip" } } 
                 }
                 If (-not $builds) {
                     Write-Error "No passing Checks matched the $CheckName specified for $PR"
