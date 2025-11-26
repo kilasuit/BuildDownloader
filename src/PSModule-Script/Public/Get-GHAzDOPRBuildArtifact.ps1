@@ -64,7 +64,15 @@ function Get-GHAzDOPRBuildArtifact {
         
         [Parameter()]
         [switch]
-        $Start
+        $Start,
+
+        [Parameter()]
+        [int]
+        $RetryIntervalSeconds = 30,
+
+        [Parameter()]
+        [int]
+        $TimeoutSeconds = 600
     )   
     begin {
 
@@ -87,12 +95,14 @@ function Get-GHAzDOPRBuildArtifact {
                 continue
             }
             else {
-                Write-Verbose "$PR is a PR - Gathering required additional PR metadata"
-                $pull = gh api -H "Accept: application/vnd.github+json" -H "X-GitHub-Api-Version: 2022-11-28" "$defuri/pulls/$PR" | ConvertFrom-Json
-                # $pull has commits_url property we can use to grab all the commits from
-                $pullcommits = gh api -H "Accept: application/vnd.github+json" -H "X-GitHub-Api-Version: 2022-11-28" $pull.commits_url | ConvertFrom-Json
-                # Get the most recent commit included in a PR and the resulting check runs for that commit using the sha of the commit 
-                $pullchecks = gh api -H "Accept: application/vnd.github+json" -H "X-GitHub-Api-Version: 2022-11-28" "$defuri/commits/$($pullcommits[-1].sha)/check-runs" | ConvertFrom-Json
+                # Use helper function with retry logic to get build checks
+                $checkResult = Get-GHPRBuildChecks -Org $Org -Repo $Repo -PRNumber $PR -CheckName $CheckName -RetryIntervalSeconds $RetryIntervalSeconds -TimeoutSeconds $TimeoutSeconds
+                if ($null -eq $checkResult) {
+                    Write-Error "Failed to get build checks for PR $PR (timeout or error occurred)"
+                    continue
+                }
+                $pull = $checkResult.Pull
+                $pullchecks = $checkResult.PullChecks
 
                 ## TODO: Issue :here we could remove the need for providing a checkname and have this just download based on all checks or prompt for a specific check as returned from the above 
                 Write-Verbose "Checking against provided Checknames - $CheckName"
