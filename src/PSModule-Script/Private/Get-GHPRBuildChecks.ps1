@@ -51,9 +51,14 @@ function Get-GHPRBuildChecks {
         $TimeoutSeconds = 600
     )
 
+    if (-not (Get-Command gh -ErrorAction SilentlyContinue)) { 
+        throw 'No GH CLI installed, exiting as this is a pre-req' 
+    }
+
     $defuri = "/repos/$Org/$Repo"
     $startTime = Get-Date
     $attempts = 0
+    $buildsComplete = $false
 
     Write-Verbose "$PRNumber is a PR - Gathering required additional PR metadata"
     $pull = gh api -H "Accept: application/vnd.github+json" -H "X-GitHub-Api-Version: 2022-11-28" "$defuri/pulls/$PRNumber" | ConvertFrom-Json
@@ -61,14 +66,9 @@ function Get-GHPRBuildChecks {
     $pullcommits = gh api -H "Accept: application/vnd.github+json" -H "X-GitHub-Api-Version: 2022-11-28" $pull.commits_url | ConvertFrom-Json
     $latestCommitSha = $pullcommits[-1].sha
 
-    do {
+    while (-not $buildsComplete) {
         $attempts++
         $elapsedSeconds = ((Get-Date) - $startTime).TotalSeconds
-
-        if ($elapsedSeconds -gt $TimeoutSeconds) {
-            Write-Error "Timeout of $TimeoutSeconds seconds exceeded while waiting for builds to complete for PR $PRNumber"
-            return $null
-        }
 
         Write-Verbose "Attempt $attempts - Querying check runs for commit $latestCommitSha"
         $pullchecks = gh api -H "Accept: application/vnd.github+json" -H "X-GitHub-Api-Version: 2022-11-28" "$defuri/commits/$latestCommitSha/check-runs" | ConvertFrom-Json
@@ -84,17 +84,24 @@ function Get-GHPRBuildChecks {
         # Check if any relevant builds are still in progress
         $inProgressChecks = $relevantChecks | Where-Object { $_.status -ne 'completed' }
 
-        if ($inProgressChecks) {
+        if (-not $inProgressChecks) {
+            Write-Verbose "All requested builds have completed"
+            $buildsComplete = $true
+        }
+        else {
             $inProgressNames = ($inProgressChecks | Select-Object -ExpandProperty name) -join ', '
             Write-Verbose "Builds in progress: $inProgressNames. Waiting $RetryIntervalSeconds seconds before retry..."
             Write-Verbose "Elapsed time: $([math]::Round($elapsedSeconds)) seconds of $TimeoutSeconds second timeout"
+            
+            # Check timeout after the API call to ensure at least one attempt is made
+            if ($elapsedSeconds -gt $TimeoutSeconds) {
+                Write-Error "Timeout of $TimeoutSeconds seconds exceeded while waiting for builds to complete for PR $PRNumber"
+                return $null
+            }
+            
             Start-Sleep -Seconds $RetryIntervalSeconds
         }
-        else {
-            Write-Verbose "All requested builds have completed"
-            break
-        }
-    } while ($true)
+    }
 
     # Return the check data needed by callers
     return [PSCustomObject]@{
