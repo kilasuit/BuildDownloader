@@ -75,7 +75,7 @@ function Get-GHWorkflowBuildArtifact {
     }
     process {
         if ($PRNumber.Count -gt 1) {
-            $Message = "Attempting to download workflow artifacts for each PRNumber that you provided - $($PRNumber.split(','))" 
+            $Message = "Attempting to download workflow artifacts for each PRNumber that you provided - $($PRNumber -join ', ')" 
         }
         else {
             $Message = "Attempting to download workflow artifacts for PRNumber $PRNumber" 
@@ -105,9 +105,9 @@ function Get-GHWorkflowBuildArtifact {
 
                 Write-Verbose "Found $($workflowRuns.Count) workflow run(s) for PR $PR"
                 
-                $prPath = "$OutPath$PR"
+                $prPath = Join-Path -Path $OutPath -ChildPath $PR
                 if (-not (Test-Path $prPath) ) { 
-                    New-Item -ItemType Directory -Path "$prPath" -Force | Out-Null 
+                    New-Item -ItemType Directory -Path $prPath -Force | Out-Null 
                     Write-Verbose "Created path for download"
                 }
                 else {
@@ -139,8 +139,8 @@ function Get-GHWorkflowBuildArtifact {
                     }
 
                     foreach ($artifact in $artifactList) {
-                        $downloadPath = "$OutPath\$PR\$($run.name)-$($run.id)"
-                        $artifactDownloadPath = "$downloadPath\$($artifact.name)"
+                        $downloadPath = Join-Path -Path $OutPath -ChildPath $PR | Join-Path -ChildPath "$($run.name)-$($run.id)"
+                        $artifactDownloadPath = Join-Path -Path $downloadPath -ChildPath $artifact.name
                         
                         if (-not (Test-Path $artifactDownloadPath)) {
                             Write-Verbose "DownloadPath: $artifactDownloadPath"
